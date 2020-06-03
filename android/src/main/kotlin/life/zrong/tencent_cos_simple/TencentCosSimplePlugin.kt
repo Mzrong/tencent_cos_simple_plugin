@@ -16,15 +16,14 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
-import java.io.File
 import java.net.MalformedURLException
 import java.net.URL
-import kotlin.math.E
 import com.tencent.cos.xml.exception.CosXmlServiceException
 import com.tencent.cos.xml.exception.CosXmlClientException
 import com.tencent.cos.xml.model.CosXmlRequest
 import com.tencent.cos.xml.model.CosXmlResult
 import com.tencent.cos.xml.listener.CosXmlResultListener
+
 
 
 
@@ -37,7 +36,9 @@ import com.tencent.cos.xml.listener.CosXmlResultListener
 public class TencentCosSimplePlugin : FlutterPlugin, MethodCallHandler {
     private var TAG = "| TencentCosSimple | Flutter | Android | "
 
-    private var cosXmlService: Any = false
+    lateinit var cosXmlService: CosXmlSimpleService
+
+    private var initServiceStatus: Boolean = false
 
     constructor() {
         instance = this
@@ -107,8 +108,9 @@ public class TencentCosSimplePlugin : FlutterPlugin, MethodCallHandler {
                 .build())
 
         val context = if (mPluginBinding == null) registrar.context() else mPluginBinding.applicationContext
-        var cosXmlServiceState: CosXmlSimpleService = CosXmlSimpleService(context, serviceConfig, credentialProvider)
+        val cosXmlServiceState: CosXmlSimpleService = CosXmlSimpleService(context, serviceConfig, credentialProvider)
         cosXmlService = cosXmlServiceState
+        initServiceStatus = true
         Log.i(TAG, "初始化成功")
     }
 
@@ -117,14 +119,20 @@ public class TencentCosSimplePlugin : FlutterPlugin, MethodCallHandler {
      */
     private fun uploadFile(call: MethodCall, result: MethodChannel.Result) {
         Log.i(TAG, "调用${call.method}方法")
-        val context = if (mPluginBinding == null) registrar.context() else mPluginBinding.applicationContext
+        if (!initServiceStatus) {
+            result.error("3", "service not init", "should init service as first")
+        }
         val map = call.arguments<HashMap<String, Any>>()
-        val transferConfig: TransferConfig = TransferConfig.Builder().build()
-        val transferManager: TransferManager = TransferManager(cosXmlService as CosXmlSimpleService, transferConfig)
+        val transferConfig: TransferConfig = TransferConfig.Builder()
+                .setDividsionForCopy((5 * 1024 * 1024).toLong())        // 是否启用分块复制的最小对象大小
+                .setSliceSizeForCopy((5 * 1024 * 1024).toLong())        // 分块复制时的分块大小
+                .setDivisionForUpload((2 * 1024 * 1024).toLong())       // 是否启用分块上传的最小对象大小
+                .setSliceSizeForUpload((1024 * 1024).toLong())          // 分块上传时的分块大小
+                .build()
+        val transferManager: TransferManager = TransferManager(cosXmlService, transferConfig)
         val bucket: String = map["bucket"] as String
         val cosPath: String = map["cosPath"] as String
         val filePath: String = map["filePath"] as String
-        val srcPath = File(context.getExternalCacheDir(), filePath).toString()
         val uploadId: String = ""
         val cosxmlUploadTask: COSXMLUploadTask = transferManager.upload(bucket, cosPath, filePath, uploadId)
 
@@ -132,7 +140,7 @@ public class TencentCosSimplePlugin : FlutterPlugin, MethodCallHandler {
             override fun onSuccess(request: CosXmlRequest, results: CosXmlResult) {
                 val cOSXMLUploadTaskResult = results as COSXMLUploadTask.COSXMLUploadTaskResult
                 result.success(true)
-                Log.i(TAG, "上传成功${results}")
+                Log.i(TAG, "上传成功${cOSXMLUploadTaskResult}")
             }
 
             override fun onFail(request: CosXmlRequest, exception: CosXmlClientException, serviceException: CosXmlServiceException) {
@@ -141,6 +149,10 @@ public class TencentCosSimplePlugin : FlutterPlugin, MethodCallHandler {
             }
         })
 
+        // 设置上传进度回调
+        cosxmlUploadTask.setCosXmlProgressListener { complete, target ->
+            // todo Do something to update progress...
+        }
 
     }
 
