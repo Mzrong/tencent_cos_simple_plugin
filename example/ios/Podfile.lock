@@ -1,0 +1,33 @@
+PODS:
+  - Flutter (1.0.0)
+  - QCloudCore/WithoutMTA (5.7.3)
+  - QCloudCOSXML/Transfer (5.7.3):
+    - QCloudCore/WithoutMTA (= 5.7.3)
+  - tencent_cos_simple (0.0.1):
+    - Flutter
+    - QCloudCOSXML/Transfer
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - tencent_cos_simple (from `.symlinks/plugins/tencent_cos_simple/ios`)
+
+SPEC REPOS:
+  trunk:
+    - QCloudCore
+    - QCloudCOSXML
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  tencent_cos_simple:
+    :path: ".symlinks/plugins/tencent_cos_simple/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  QCloudCore: 62e4857fc8d435de9be71002021c0d97f1f1b43a
+  QCloudCOSXML: 6a3df109cbdb6a8929c78951d5758ebc853c280b
+  tencent_cos_simple: 66b0986352f33d03fcce89aba346884309d67b64
+
+PODFILE CHECKSUM: 1b66dae606f75376c5f2135a8290850eeb09ae83
+
+COCOAPODS: 1.8.4
